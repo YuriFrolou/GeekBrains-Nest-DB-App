@@ -1,0 +1,24 @@
+<table>
+    <tr>
+        <th>Новость была изменена</th>
+    </tr>
+    <tr>
+        <td>Название</td>
+        <td>{{{equal news.title updatedNews.title}}}</td>
+    </tr>
+    <tr>
+        <td>Содержание</td>
+        <td>{{{equal news.description updatedNews.description}}}</td>
+    </tr>
+    <tr>
+        <td>Автор</td>
+        <td>{{{equal news.author updatedNews.author}}}</td>
+    </tr>
+    <tr>
+        <td>Ссылка на новость</td>
+        <td>
+            <a href='http://127.0.0.1:3000/news/detail/{{news.id}}'> http://127.0.0.1:3000/news/detail/{{news.id}}
+            </a>
+        </td>
+    </tr>
+</table>

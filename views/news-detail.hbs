@@ -1,0 +1,73 @@
+{{#if news}}
+        <h1 class="text-center mb-3">Детальная страница новости</h1>
+    <div class='row'>
+        <div class="col-lg-6 mx-auto">
+            <div class='card'>
+                <img src="{{news.cover}}" class="card-img-top" alt="cat">
+                <div class="card-body">
+                    <h5 class="card-title">{{news.title}}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{news.author}}</h6>
+                    <p class="card-text">{{news.description}}</p>
+                    <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe"></iframe>
+                    <form class="upload-form" method="post" enctype="multipart/form-data" target="dummyframe"
+                          action="http://127.0.0.1:3000/comments/{{news.id}}">
+                        <p class="bold">Создать комментарий:</p>
+                        <input type="text" class="form-control mb-2" name="author" placeholder="Автор">
+                        <textarea name="message" class="form-control mb-3" placeholder="Сообщение"></textarea>
+                        <label for="picture">Добавить картинку</label>
+                        <input type="file" name="cover" class="form-control-file mb-3" id="picture"/>
+                        <button type="submit" class="btn btn-outline-secondary">Отправить</button>
+                    </form>
+                    <div>
+                        {{#if news.comments}}
+                            <h5 class="card-title mb-2">Список комментариев</h5>
+                        <div class="comments-block">
+                            {{#each news.comments}}
+                                <div class="comment mb-2">
+                                    <div class="d-flex flex-wrap">
+                                        <div class="mb-2 me-4 rounded-circle bg-success bg-opacity-10 border-0" style="width:65px; height:65px; overflow: hidden;">
+                                            <img src="{{{ternOperator this.cover 'https://termosfera.su/wp-content/uploads/2022/04/2816616767_vubrbej.jpg'}}}" alt="" style="height:100%;">
+                                        </div>
+                                        <div>
+                                            <h6 class="card-subtitle mb-2 text-muted">{{this.author}}</h6>
+                                            <p class="card-text">{{this.message}}</p>
+                                        </div>
+                                    </div>
+                                {{#if this.reply}}
+                                <div class="comments-block">
+                                    {{#each this.reply}}
+                                        <div class="comment mb-2">
+                                            <div class="d-flex flex-wrap">
+                                                <div class="mb-2 me-4 rounded-circle bg-success bg-opacity-10 border-0" style="width:65px; height:65px; overflow: hidden;">
+                                                    <img src="{{{ternOperator this.cover 'https://termosfera.su/wp-content/uploads/2022/04/2816616767_vubrbej.jpg'}}}" alt="" style="height:100%;">
+                                                </div>
+                                                <div>
+                                                    <h6 class="card-subtitle mb-2 text-muted">{{this.author}}</h6>
+                                                    <p class="card-text">{{this.message}}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {{/each}}
+                                {{/if}}
+                                    <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe"></iframe>
+                                    <form class="upload-form" method="post" enctype="application/x-www-form-urlencoded" target="dummyframe"
+                                          action="{{{ url 'http://127.0.0.1:3000/comments' this.newsId this.id }}}">
+                                        <p>Ответить на комментарий:</p>
+                                        <input type="text" class="form-control mb-2" name="author" placeholder="Автор">
+                                        <textarea name="message" class="form-control mb-3" placeholder="Сообщение"></textarea>
+                                        <button type="submit" class="btn btn-outline-secondary">Отправить</button>
+                                    </form>
+                                </div>
+                                {{/each}}
+                            {{else}}
+                            <div>Комментариев нет</div>
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </div>
+{{else}}
+        <h1>Новость не найдена</h1>
+{{/if}}
+
+
