@@ -1,86 +1,104 @@
-import { Injectable } from '@nestjs/common';
-import { Comments, CreateCommentDto } from './dto/create-comment.dto';
+import { forwardRef, HttpException, HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
-import { getRandomInt } from '../../utils/helpers';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { NewsService } from '../news.service';
+import { CommentsEntity } from './entities/comments.entity';
+import { UsersService } from '../../users/users.service';
+
 
 @Injectable()
 export class CommentsService {
 
-  private readonly comments: Comments = {
-    1: [{
-      id: 123,
-      message: 'Ура! Наш первый комментарий',
-      author: 'Маша',
-      cover:'https://otkritkis.com/wp-content/uploads/2022/06/pwwhk.jpg',
-      reply:[],
-      newsId:1
-    }],
-  };
-
-  addNewsId(id:number){
-    this.comments[id]=[];
+  constructor(@InjectRepository(CommentsEntity)
+              private readonly commentRepository: Repository<CommentsEntity>,
+              @Inject(forwardRef(() => NewsService))
+              private readonly newsService: NewsService,
+              private readonly usersService: UsersService,
+  ) {
   }
 
-  create(newsId: number, comment: CreateCommentDto,commentId:number|undefined=undefined): CreateCommentDto[] | CreateCommentDto|string {
-    const generatedId = getRandomInt(1, 10000);
-    if(commentId){
-      const parentComment=this.comments[newsId].find(comment => comment.id === commentId);
-      if (parentComment) {
-        this.comments[newsId][this.comments[newsId].indexOf(parentComment)]['reply']?.push({...comment,id:generatedId});
-        return this.findOne(newsId,commentId);
-      }
+  async create(createCommentDto: CreateCommentDto):Promise<CommentsEntity> {
+    const _news = await this.newsService.findOneById(createCommentDto.newsId);
+    const _user = await this.usersService.getUserById(createCommentDto.userId);
+
+    if (!_user) {
+      throw new HttpException(
+        'Не существует такого автора', HttpStatus.BAD_REQUEST,
+      );
     }
-    if (Object.keys(this.comments).indexOf(String(newsId)) !== -1) {
-      this.comments[newsId]?.push({...comment,id:generatedId,reply:[],newsId:newsId});
-      return this.comments[newsId];
+    if (!_news) {
+      throw new HttpException(
+        'Не существует такой новости', HttpStatus.BAD_REQUEST,
+      );
     }
 
-    return 'Не удалось добавить комментарий';
+    const comment = new CommentsEntity();
+    comment.message = createCommentDto.message;
+    comment.createdAt = new Date();
+    comment.updatedAt = new Date();
+    comment.cover = createCommentDto.cover;
+    comment.user = _user;
+    comment.news = _news;
+
+    return await this.commentRepository.save(comment);
+
   }
 
 
-  findAll(newsId: string | number): CreateCommentDto[]|[] {
-    return this.comments[newsId]?this.comments[newsId]:[];
+  async findAll(newsId: number):Promise<CommentsEntity[]> {
+    return await this.commentRepository.find({
+      where: {
+        news: {
+          id: newsId,
+        },
+      },
+    });
   }
 
-  findOne(newsId: number, commentId: number): CreateCommentDto | string {
-    if (!this.comments[newsId]) {
-      return 'Новость с данным id не найдена';
+  async findAllWithUsers(newsId: number):Promise<CommentsEntity[]> {
+    return await this.commentRepository.find({
+      where: {
+        news: {
+          id: newsId,
+        },
+      },
+      relations: ['user'],
+      join: {
+        alias: 'comments',
+        leftJoinAndSelect: {
+          user: 'comments.user',
+        },
+      },
+    });
+  }
+
+  async findOne(newsId: number, commentId: number):Promise<CommentsEntity>  {
+    const news = await this.newsService.findOneById(newsId);
+    const comment = await this.commentRepository.findOneBy({id:commentId});
+    if (!news || !comment) {
+      throw new NotFoundException();
     }
-    const comment = this.comments[newsId].find(comment => comment.id === commentId);
-    if (!comment) {
-      return 'Комментарий не найден';
-    }
+
     return comment;
   }
 
-  update(newsId: number, commentId: number, updateCommentDto: UpdateCommentDto): boolean {
-    if (!this.comments[newsId]) {
-      return false;
-    }
-    let comment = this.comments[newsId].find(comment => comment.id === commentId);
-    if (!comment) {
-      return false;
-    }
-    this.comments[newsId][this.comments[newsId].indexOf(comment)] = {
+  async update(newsId: number, commentId: number, updateCommentDto: UpdateCommentDto):Promise<CommentsEntity>  {
+    const comment=await this.findOne(newsId,commentId);
+    const updatedComment = {
       ...comment,
-      ...updateCommentDto,
+      message: updateCommentDto.message ? updateCommentDto.message : comment.message,
+      updatedAt: new Date()
     };
-    return true;
+    await this.commentRepository.save(updatedComment);
+    return this.commentRepository.findOneBy({id:commentId})
   }
 
 
-  remove(newsId: number, commentId: number): boolean {
-
-    if (!this.comments[newsId]) {
-      return false;
-    }
-    let comment = this.comments[newsId].find(comment => comment.id === commentId);
-    if (!comment) {
-      return false;
-    }
-    this.comments[newsId].splice(this.comments[newsId].indexOf(comment), 1);
-    return true;
-
+  async remove(newsId: number, commentId: number):Promise<CommentsEntity[]> {
+    const comment=await this.findOne(newsId,commentId);
+    await this.commentRepository.remove(comment);
+    return await this.findAll(newsId);
   }
 }

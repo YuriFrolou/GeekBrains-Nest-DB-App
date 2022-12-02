@@ -1,12 +1,8 @@
-import {IsArray, IsInt, IsOptional, IsString} from "class-validator";
+import { IsArray, IsInt, IsNumberString, IsOptional, IsString } from 'class-validator';
 import {ApiProperty, ApiPropertyOptional} from "@nestjs/swagger";
 import { CreateCommentDto } from '../comments/dto/create-comment.dto';
 
 export class CreateNewsDto {
-    @ApiPropertyOptional()
-    @IsInt()
-    @IsOptional()
-    id?: number;
 
     @ApiProperty({type:String})
     @IsString()
@@ -18,15 +14,6 @@ export class CreateNewsDto {
     })
     description: string;
 
-    @ApiProperty({type:String})
-    @IsString()
-    author: string;
-
-    @ApiPropertyOptional({type:Number})
-    @IsInt()
-    @IsOptional()
-    countView?: number;
-
     @ApiPropertyOptional({type:String})
     @IsString()
     @IsOptional()
@@ -36,6 +23,14 @@ export class CreateNewsDto {
     @IsArray()
     @IsOptional()
     comments?: CreateCommentDto[];
+
+    @ApiProperty({type:Number})
+    @IsNumberString()
+    userId: number;
+
+    @ApiProperty({type:Number})
+    @IsNumberString()
+    categoryId: number;
 }
 
 export type NewsCreate=Record<string|number,CreateNewsDto>;

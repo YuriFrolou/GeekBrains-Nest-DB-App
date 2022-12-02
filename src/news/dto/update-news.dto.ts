@@ -19,8 +19,4 @@ export class UpdateNewsDto {
     @IsOptional()
     author: string;
 
-    @ApiPropertyOptional({type:Number})
-    @IsInt()
-    @IsOptional()
-    countView?: number;
 }

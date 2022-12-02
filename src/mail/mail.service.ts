@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { CreateNewsDto } from '../news/dto/create-news.dto';
+import { NewsEntity } from '../news/entities/news.entity';
 
 @Injectable()
 export class MailService {
@@ -20,7 +21,7 @@ export class MailService {
     }
   }
 
-  updateNewsLogMessage(addressTo: string, array:CreateNewsDto[]) {
+  updateNewsLogMessage(addressTo: string, array:NewsEntity[]) {
     console.log(array);
     return this.mailerService
       .sendMail({
