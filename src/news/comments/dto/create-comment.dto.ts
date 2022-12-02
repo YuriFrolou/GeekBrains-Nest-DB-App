@@ -15,24 +15,19 @@ export class CreateCommentDto {
     @IsNotEmpty()
     message: string;
 
-    @ApiProperty({type: String})
-    @IsString()
-    author: string;
-
     @ApiPropertyOptional({type:String})
     @IsString()
     @IsOptional()
     cover?: string;
 
     @ApiPropertyOptional()
-    @IsArray()
+    @IsNumberString()
     @IsOptional()
-    reply?: CreateCommentDto[];
+    newsId: number;
 
-    @ApiPropertyOptional()
-    @IsInt()
-    @IsOptional()
-    newsId?: number;
+    @ApiProperty()
+    @IsNumberString()
+    userId: number;
 }
 
 export type Comments = Record<string | number, CreateCommentDto[]>;

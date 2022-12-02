@@ -7,7 +7,6 @@ import {
   Patch,
   Post,
   Render,
-  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -15,10 +14,10 @@ import { CommentsService } from './comments.service';
 import { ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
-import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { HelperFileLoad } from '../../utils/HelperFileLoad';
+import { CommentsEntity } from './entities/comments.entity';
 
 const PATH_NEWS = '/static/';
 HelperFileLoad.path = PATH_NEWS;
@@ -28,13 +27,13 @@ export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {
   }
 
-  @Post('/:newsId')
+  @Post()
   @ApiTags('comments')
   @ApiBody({ type: CreateCommentDto })
   @ApiResponse({
     status: 201,
     description: 'create new comment',
-    type: [CreateCommentDto],
+    type:CommentsEntity
   })
   @UseInterceptors(FileInterceptor('cover', {
     storage: diskStorage({
@@ -42,26 +41,15 @@ export class CommentsController {
       filename: HelperFileLoad.customFileName,
     }),
   }))
-  create(@Param('newsId') newsId: number, @Body() createCommentDto: CreateCommentDto, @UploadedFile()cover: Express.Multer.File) {
-    console.log(cover);
+  async create(@Body() createCommentDto: CreateCommentDto, @UploadedFile()cover: Express.Multer.File):Promise<CommentsEntity>{
+
     if (cover?.filename) {
       createCommentDto.cover = PATH_NEWS + cover.filename;
     } else {
       createCommentDto.cover = 'https://termosfera.su/wp-content/uploads/2022/04/2816616767_vubrbej.jpg';
     }
-    return this.commentsService.create(newsId, createCommentDto);
-  }
+    return await this.commentsService.create(createCommentDto);
 
-  @Post('/:newsId/:commentId')
-  @ApiTags('comments')
-  @ApiBody({ type: [CreateCommentDto] })
-  @ApiResponse({
-    status: 201,
-    description: 'create reply to comment',
-    type: [CreateCommentDto],
-  })
-  createReplyToComment(@Param('newsId') newsId: number, @Param('commentId') commentId: number, @Body() createCommentDto: CreateCommentDto) {
-    return this.commentsService.create(newsId, createCommentDto, commentId);
   }
 
 
@@ -70,9 +58,9 @@ export class CommentsController {
   @ApiResponse({
     status: 200,
     description: 'get all comments by news id',
-    type: [CreateCommentDto],
+    type:[CommentsEntity]
   })
-  findAll(@Param('newsId') newsId: number) {
+  async findAll(@Param('newsId') newsId: number):Promise<CommentsEntity[]> {
     return this.commentsService.findAll(newsId);
 
   }
@@ -85,8 +73,8 @@ export class CommentsController {
     description: 'render all comments by news id'
   })
   @Render('comments-list')
-  renderAll(@Param('newsId') newsId: number) {
-    const comments= this.commentsService.findAll(newsId);
+ async renderAll(@Param('newsId') newsId: number):Promise<Object> {
+    const comments= await this.commentsService.findAllWithUsers(newsId);
     return {
       comments:comments
     }
@@ -98,10 +86,10 @@ export class CommentsController {
   @ApiResponse({
     status: 200,
     description: 'get comment by newsId and commentId',
-    type: CreateCommentDto,
+    type: CommentsEntity,
   })
-  findOne(@Param('newsId') newsId: number, @Param('commentId') commentId: number): CreateCommentDto | string {
-    return this.commentsService.findOne(newsId, commentId);
+  async findOne(@Param('newsId') newsId: number, @Param('commentId') commentId: number):Promise<CommentsEntity> {
+    return await this.commentsService.findOne(newsId, commentId);
   }
 
   @Patch('/:newsId/:commentId')
@@ -110,20 +98,10 @@ export class CommentsController {
   @ApiResponse({
     status: 200,
     description: 'update comment',
-    type: 'Комментарий успешно обновлен',
+    type:CommentsEntity
   })
-  @ApiResponse({
-    status: 500,
-    description: 'incorrect id',
-    type: 'Проверьте правильность вводимых данных',
-  })
-  update(@Param('newsId') newsId: number, @Param('commentId') commentId: number, @Body() updateCommentDto: UpdateCommentDto, @Res() response: Response) {
-    const res = this.commentsService.update(newsId, commentId, updateCommentDto);
-    if (res) {
-      return response.status(200).send(' Комментарий успешно обновлен');
-    }
-    return response.status(500).send('Не удалось обновить комментарий');
-
+  async update(@Param('newsId') newsId: number, @Param('commentId') commentId: number, @Body() updateCommentDto: UpdateCommentDto):Promise<CommentsEntity> {
+    return await this.commentsService.update(newsId, commentId, updateCommentDto);
   }
 
   @Delete('/:newsId/:commentId')
@@ -131,10 +109,9 @@ export class CommentsController {
   @ApiResponse({
     status: 200,
     description: 'delete comment',
-    type: 'is successful',
+    type: [CommentsEntity]
   })
-  remove(@Param('newsId') newsId: number, @Param('commentId') commentId: number): string {
-    const isRemoved = this.commentsService.remove(newsId, commentId);
-    return isRemoved ? 'Комментарий успешно удален' : 'Не удалось удалить комментарий';
+  async remove(@Param('newsId') newsId: number, @Param('commentId') commentId: number):Promise<CommentsEntity[]> {
+    return await this.commentsService.remove(newsId, commentId);
   }
 }
